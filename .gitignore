@@ -1,0 +1,15 @@
+**/saved_models/*
+**/data/*
+**/data_lmdb/*
+**/data_lmdb_release/*
+**/ISIC-Archive-Data/*
+**/result/*
+*.mdb
+*.pt
+*.tar
+*.sh
+*.txt
+*.zip
+*.eps
+*.pdf
+a
