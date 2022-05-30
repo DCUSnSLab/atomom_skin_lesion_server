@@ -43,7 +43,7 @@ def inference(opt,device):
     model.eval()
 
     model = model.to(device)
-    fig = plt.figure()
+    # fig = plt.figure()
     running_loss, running_corrects, num_cnt = 0.0, 0, 0
 
     data_transforms = transforms.Compose([
@@ -61,6 +61,8 @@ def inference(opt,device):
     outputs = model(inputs.unsqueeze(0))
     _, preds = torch.max(outputs, 1)
     print(preds)
+    return preds.item()
+
     # with torch.no_grad():
     #     for i, (inputs, labels) in enumerate(dataloaders[phase]):
     #         print(type(inputs),len(inputs))
@@ -104,22 +106,80 @@ def inference(opt,device):
 import torch
 import torchvision.models as models
 from torch.profiler import profile, record_function, ProfilerActivity
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import f1_score
 
 if __name__ == '__main__':
     opt = argparse.Namespace(
         num_classes=19,
         model_name=str('efficientnet-b0'),
-        # model_path=str('./classification_model.pt'),
         model_path=str('./best_accuracy.pt'),
-
         # img_path=str('./ISIC-Archive-Data/18.vascular lesion/ISIC_0033762.jpeg'),
-        # img_path=str('/mnt/ISIC-Archive-Data/00.actinic keratosis/ISIC_0024468.jpeg'),
-        img_path=str('/mnt/ISIC-Archive-Data/test/18.vascular lesion/ISIC_0024662.jpeg'),
+        img_path=str('/mnt/ISIC-Archive-Data/00.actinic keratosis/ISIC_0024468.jpeg'),
+        dir_path=str('/mnt/ISIC-Archive-Data/test/'),
+        # gt=str('')
     )
+    # print(opt.dir_path)
+    # print(os.listdir(opt.dir_path))
+    dirList=os.listdir(opt.dir_path)
+    lable_list=[]
+    path_list=[]
 
-
-    with profile(activities=[
-        ProfilerActivity.CPU, ProfilerActivity.CUDA], record_shapes=True) as prof:
-        with record_function("model_inference"):
-            inference(opt=opt, device=device)
-    print(prof.key_averages().table(sort_by="cpu_time_total", row_limit=10))
+    for i in dirList:
+        tempPath=os.path.join(opt.dir_path,i)
+        path=tempPath
+        # print(i)
+        # print(i.split('.'))
+        gt=i.split('.')[0]
+        # print(gt)
+        # print(path)
+        tempPath=os.listdir(tempPath)
+        # print(tempPath)
+        [path_list.append(os.path.join(path,j)) for j in tempPath]
+        [lable_list.append(gt) for j in tempPath]
+        # [path_list.append(os.path.join(path, j)) for j in tempPath]
+        # print(path_list)
+        # print(path)
+        # print(tempPath)
+    print(sorted(set(lable_list)))
+    # print(path_list)
+    # print(len(path_list))
+    # for i, data in enumerate(path_list):
+    #     print(data,lable_list[i])
+    #
+    preds = []
+    for i, data in enumerate(path_list):
+        opt.img_path = data
+        # print(opt.img_path)
+        # opt.gt=lable_list[i]
+        print(opt.img_path, lable_list[i])
+        preds.append(inference(opt=opt, device=device))
+        # if(i>5):
+        #     break
+    # with profile(activities=[
+    #     ProfilerActivity.CPU, ProfilerActivity.CUDA], record_shapes=True) as prof:
+    #     with record_function("model_inference"):
+    #         for i, data in enumerate(path_list):
+    #             opt.img_path=data
+    #             # print(opt.img_path)
+    #             # opt.gt=lable_list[i]
+    #             print(opt.img_path,lable_list[i])
+    #             preds.append(inference(opt=opt, device=device))
+    # print(preds)
+    pred=[]
+    [pred.append(str(format(preds[i],'02'))) for i in range(len(preds))]
+    print(pred)
+    print(lable_list)
+    # lable_list=lable_list[:7]
+    print(confusion_matrix(lable_list, pred))
+    print("accuracy", accuracy_score(lable_list, pred))
+    print("precision", precision_score(lable_list, pred
+                                       , average='macro'))
+    print("recall", recall_score(lable_list, pred
+                                 , average='macro'))
+    print("f1_score", f1_score(lable_list, pred
+                               , average='macro'))
+    # print(prof.key_averages().table(sort_by="cpu_time_total", row_limit=10))
